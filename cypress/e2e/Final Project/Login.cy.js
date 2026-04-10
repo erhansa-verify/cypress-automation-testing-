@@ -11,18 +11,25 @@ describe('Verifikasi fungsi login', () => {
 
   it('TC_01 - Login valid', () => {
     LoginPage.visitPage()
+    cy.intercept('GET', '**/api/v2/dashboard/employees/action-summary')
+      .as('dashboard')
     LoginPage.inputUsername(LoginData.validusername)
     LoginPage.inputPassword(LoginData.validpassword)
     LoginPage.clickLogin()
+    cy.wait('@dashboard').its('response.statusCode').should('eq', 200)
     LoginPage.verifyLogin()
- 
+  
   })
 
   it('TC_02 - Username salah', () => {
     LoginPage.visitPage()
     LoginPage.inputUsername(LoginData.invalidusername) 
     LoginPage.inputPassword(LoginData.validpassword)
+    cy.intercept('POST', 'https://opensource-demo.orangehrmlive.com/web/index.php/auth/validate').as('messages');
     LoginPage.clickLogin()
+    cy.wait('@messages').then((interception) => {
+      expect(interception.response.statusCode).to.eq(302);
+    })
 
     cy.contains('Invalid credentials').should('be.visible')
   })
@@ -31,7 +38,12 @@ describe('Verifikasi fungsi login', () => {
     LoginPage.visitPage()
     LoginPage.inputUsername(LoginData.validusername)
     LoginPage.inputPassword(LoginData.invalidpassword)
+    cy.intercept('POST', 'https://opensource-demo.orangehrmlive.com/web/index.php/auth/validate').as('messages');
     LoginPage.clickLogin()
+
+    cy.wait('@messages').then((interception) => {
+      expect(interception.response.statusCode).to.eq(302);
+    })
 
     cy.contains('Invalid credentials').should('be.visible')
   })
